@@ -15,7 +15,8 @@
     "test": "node --test"
   },
   "dependencies": {
-    "hyparquet": "1.31.1"
+    "hyparquet": "1.31.1",
+    "hyparquet-compressors": "1.1.2"
   },
   "devDependencies": {
     "concurrently": "9.2.1",

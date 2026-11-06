@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { asyncBufferFromUrl, parquetReadObjects, parquetRead } from "hyparquet";
+import { compressors } from "hyparquet-compressors";
 
 const HF_ROOT = "https://huggingface.co/datasets/tejhq/indian-markets/resolve/main/";
 const TEJ_API = "https://api.tejhq.dev/v1/";
@@ -86,7 +87,7 @@ async function fetchText(url, headers = REQUEST_HEADERS) {
 
 async function readParquet(url, columns) {
   const file = await asyncBufferFromUrl({ url, requestInit: { headers: REQUEST_HEADERS } });
-  return parquetReadObjects({ file, columns });
+  return parquetReadObjects({ file, columns, compressors });
 }
 
 function maxDate(rows) {
@@ -364,17 +365,23 @@ export class ScreenerDataEngine {
     const dataDate = [nseDate, bseDate].filter(Boolean).sort().pop() || null;
     if (!dataDate) throw new Error("The market-data source did not provide a trading date.");
 
-    const [nseMeta, bseMeta, bulk, peReport] = await Promise.all([
+    const [nseMeta, bseMeta, bulkResult, peReport] = await Promise.all([
       this.readSnapshot("NSE", nseDate || dataDate),
       this.readSnapshot("BSE", bseDate || dataDate),
-      fetchNseBulkData(),
-      fetchPeReport(nseDate || dataDate)
+      fetchNseBulkData().catch(error => ({
+        marketCaps: new Map(), marketCapCount: 0, error: error.message
+      })),
+      fetchPeReport(nseDate || dataDate).catch(error => ({
+        reportDate: null, priceEarnings: new Map(), error: error.message
+      }))
     ]);
 
-    const valuations = {
-      marketCaps: bulk.marketCaps,
-      priceEarnings: peReport.priceEarnings
-    };
+    const valuationCache = await this.readCache("valuation-cache.json");
+    const cachedCaps = new Map(Object.entries(valuationCache?.marketCaps || {}).map(([symbol, value]) => [symbol, asNumber(value)]));
+    const cachedPe = new Map(Object.entries(valuationCache?.priceEarnings || {}).map(([symbol, value]) => [symbol, asNumber(value)]));
+    const marketCaps = bulkResult.marketCaps.size ? bulkResult.marketCaps : cachedCaps;
+    const priceEarnings = peReport.priceEarnings.size ? peReport.priceEarnings : cachedPe;
+    const valuations = { marketCaps, priceEarnings };
     const rows = buildRows(
       [
         ...nseMetrics.map(row => ({ ...row, exchange: "NSE" })),
@@ -387,20 +394,24 @@ export class ScreenerDataEngine {
     const result = {
       rows,
       dataDate,
-      reportDate: peReport.reportDate,
+      reportDate: peReport.reportDate || valuationCache?.reportDate || null,
       allTimeReady: false,
-      marketCapCoverage: bulk.marketCaps.size,
-      peCoverage: peReport.priceEarnings.size,
+      marketCapCoverage: bulkResult.marketCapCount || marketCaps.size,
+      peCoverage: priceEarnings.size,
       note: null
     };
-    if (!bulk.marketCaps.size) result.note = "NSE market-cap feed unavailable; those cells are blank.";
-    else if (!peReport.priceEarnings.size) result.note = "NSE P/E report unavailable; those cells are blank.";
-    await this.writeCache("valuation-cache.json", {
-      marketCaps: Object.fromEntries(bulk.marketCaps),
-      priceEarnings: Object.fromEntries(peReport.priceEarnings),
-      reportDate: peReport.reportDate,
-      updatedAt: new Date().toISOString()
-    });
+    if (!bulkResult.marketCapCount && !marketCaps.size) result.note = "NSE market-cap feed unavailable; those cells are blank.";
+    else if (!bulkResult.marketCapCount) result.note = "Using the last saved NSE market-cap snapshot.";
+    if (!peReport.priceEarnings.size && priceEarnings.size) result.note = "Using the last saved NSE P/E snapshot.";
+    else if (!peReport.priceEarnings.size && !priceEarnings.size) result.note = "NSE P/E report unavailable; those cells are blank.";
+    if (marketCaps.size || priceEarnings.size) {
+      await this.writeCache("valuation-cache.json", {
+        marketCaps: Object.fromEntries(marketCaps),
+        priceEarnings: Object.fromEntries(priceEarnings),
+        reportDate: result.reportDate,
+        updatedAt: new Date().toISOString()
+      });
+    }
     return result;
   }
 
@@ -522,6 +533,7 @@ export class ScreenerDataEngine {
     await parquetRead({
       file,
       columns: HISTORY_COLUMNS,
+      compressors,
       onChunk: chunk => {
         if (!wanted.has(chunk.columnName)) return;
         const groupKey = chunk.rowStart + ":" + chunk.rowEnd;
@@ -553,7 +565,7 @@ export class ScreenerDataEngine {
     });
 
     if (processed === 0) {
-      const rows = await parquetReadObjects({ file, columns: HISTORY_COLUMNS });
+      const rows = await parquetReadObjects({ file, columns: HISTORY_COLUMNS, compressors });
       for (const row of rows) {
         const symbol = text(row.symbol).toUpperCase();
         const isin = text(row.isin);
