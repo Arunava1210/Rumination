@@ -1,0 +1,37 @@
+{
+  "name": "bharatchart",
+  "version": "0.1.0",
+  "description": "A focused Indian equities chart terminal using TradingView Lightweight Charts",
+  "main": "electron/main.cjs",
+  "author": "Arunava1210",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:app": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "build": "vite build",
+    "start": "electron .",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --x64"
+  },
+  "dependencies": {
+    "lightweight-charts": "5.2.1"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.1",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "vite": "7.1.11",
+    "wait-on": "8.0.4"
+  },
+  "build": {
+    "appId": "in.bharatchart.desktop",
+    "productName": "BharatChart",
+    "asar": true,
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "category": "Office",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  }
+}

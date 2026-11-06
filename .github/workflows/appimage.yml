@@ -1,0 +1,61 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches: [bharat-chart]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 xvfb xauth dbus-x11
+      - name: Install dependencies
+        run: npm install
+      - name: Build x86_64 AppImage
+        run: npm run dist:linux
+      - name: Verify AppImage
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPIMAGE="$(find release -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$APPIMAGE"
+          chmod +x "$APPIMAGE"
+          file "$APPIMAGE"
+          test "$(stat -c %s "$APPIMAGE")" -gt 50000000
+          echo "APPIMAGE_PATH=$APPIMAGE" >> "$GITHUB_ENV"
+      - name: Smoke test packaged application
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HOME="$RUNNER_TEMP/bharatchart-home"
+          export XDG_CONFIG_HOME="$HOME/.config"
+          export XDG_CACHE_HOME="$HOME/.cache"
+          export XDG_DATA_HOME="$HOME/.local/share"
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME"
+          status=0
+          timeout 18s xvfb-run -a dbus-run-session -- "$APPIMAGE_PATH" --no-sandbox || status=$?
+          if [[ "$status" -ne 0 && "$status" -ne 124 ]]; then
+            echo "AppImage exited unexpectedly: $status"
+            exit "$status"
+          fi
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: BharatChart-x86_64.AppImage
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 30

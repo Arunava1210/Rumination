@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>BharatChart</title>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">B</div><div class="brand-word">bharat<span>chart</span></div></div>
+    <div class="search-area">
+      <div class="search-box"><span class="search-icon">⌕</span><input id="symbol-search" placeholder="Search NSE / BSE symbols…" autocomplete="off" spellcheck="false"><kbd>/</kbd></div>
+      <div id="symbol-results" class="symbol-results hidden"></div>
+    </div>
+    <div class="top-actions">
+      <div class="exchange-switch"><button class="exchange-btn active" data-exchange="NSE">NSE</button><button class="exchange-btn" data-exchange="BSE">BSE</button></div>
+      <button id="refresh" class="icon-button" title="Refresh symbols and chart">↻</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <section class="instrument-bar">
+      <div class="instrument-id"><div class="ticker-avatar" id="ticker-avatar">R</div><div><div class="instrument-title" id="instrument-name">Reliance Industries</div><div class="instrument-subtitle"><span id="instrument-symbol">RELIANCE</span><span>·</span><span id="instrument-exchange">NSE</span><span>·</span><span id="instrument-market">Equity</span></div></div></div>
+      <div class="quote-block"><div class="quote-price" id="quote-price">—</div><div class="quote-change neutral" id="quote-change">Waiting for data</div></div>
+      <div class="instrument-meta"><div><span>OPEN</span><b id="meta-open">—</b></div><div><span>HIGH</span><b id="meta-high">—</b></div><div><span>LOW</span><b id="meta-low">—</b></div><div><span>VOLUME</span><b id="meta-volume">—</b></div></div>
+    </section>
+    <section class="chart-panel">
+      <div class="toolbar">
+        <div class="toolbar-left"><div class="tool-group intervals"><button data-interval="1m">1m</button><button data-interval="5m">5m</button><button data-interval="15m">15m</button><button data-interval="30m">30m</button><button data-interval="1h">1H</button><span class="tool-divider"></span><button data-interval="1D" class="active">1D</button><button data-interval="1W">1W</button><button data-interval="1M">1M</button></div>
+          <div class="tool-group ranges"><button data-range="1D">1D</button><button data-range="5D">5D</button><button data-range="1M">1M</button><button data-range="3M">3M</button><button data-range="6M">6M</button><button data-range="1Y" class="active">1Y</button><button data-range="5Y">5Y</button><button data-range="MAX">MAX</button></div></div>
+        <div class="toolbar-right"><select id="chart-type" aria-label="Chart type"><option value="candles">Candles</option><option value="bar">Bars</option><option value="line">Line</option><option value="area">Area</option></select><button id="draw-line" class="tool-button">＋ Price line</button><button id="clear-lines" class="tool-button">Clear</button><button id="fit-chart" class="tool-button icon-only" title="Fit chart">⤢</button></div>
+      </div>
+      <div class="chart-title-row"><div><b id="chart-symbol">NSE:RELIANCE</b><span id="chart-interval-label">· 1 day</span></div><div id="ohlc-line">O — &nbsp; H — &nbsp; L — &nbsp; C —</div><div id="data-provider" class="provider-label">Connecting to market data…</div></div>
+      <div class="chart-wrap"><div id="chart"></div><div id="chart-state" class="chart-state hidden"></div></div>
+      <div class="chart-footer"><span id="data-note">Daily history: TejHQ · Intraday: Yahoo Finance</span><span><i class="live-dot"></i><span id="connection-status">Connecting</span></span></div>
+    </section>
+  </main>
+  <footer class="app-footer"><span>Private-use market charting · Availability varies by symbol and exchange.</span><span>Charts by <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView Lightweight Charts™</a></span></footer>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
