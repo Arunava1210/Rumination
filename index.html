@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1017" />
+  <title>India Stock Screener</title>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div><div class="brand-name">INDIA <span>SCREENER</span></div><div class="brand-subtitle">NSE · BSE · EOD data</div></div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input id="search" type="search" placeholder="Search company or symbol…" autocomplete="off" spellcheck="false" />
+      <kbd>/</kbd>
+    </div>
+    <div class="top-actions">
+      <button id="refresh" class="refresh-button" type="button" title="Refresh daily data"><span>↻</span> Refresh</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section id="key-setup" class="key-setup hidden">
+      <div class="setup-copy">
+        <div class="setup-eyebrow">ONE-TIME SETUP</div>
+        <h1>Connect your free market-data key</h1>
+        <p>The screener uses BharatStock for market cap and valuation. Your key is saved locally on this computer.</p>
+      </div>
+      <div class="key-form">
+        <label for="api-key">BharatStock API key</label>
+        <div class="key-input-row">
+          <input id="api-key" type="password" placeholder="bsk_live_…" autocomplete="off" spellcheck="false" />
+          <button id="save-key" type="button">Connect</button>
+        </div>
+        <div class="key-help"><a id="get-key" href="#">Get a free API key ↗</a><span>60 requests/day · refreshed once per day</span></div>
+        <div id="key-error" class="error-text"></div>
+      </div>
+    </section>
+
+    <section class="summary-bar">
+      <div>
+        <div class="page-title">Stock screener</div>
+        <div class="page-subtitle">All listed NSE and BSE equities · Sort any metric</div>
+      </div>
+      <div class="summary-right">
+        <div id="stock-count" class="stock-count">No stocks loaded</div>
+        <div id="sync-status" class="sync-status"><i class="status-dot"></i><span>Waiting for data</span></div>
+      </div>
+    </section>
+
+    <section class="table-panel">
+      <div class="table-scroll">
+        <table id="screener-table">
+          <thead>
+            <tr>
+              <th class="company-column"><span>Company</span></th>
+              <th data-sort="allTime"><button type="button">All time*</button></th>
+              <th data-sort="oneYear"><button type="button">1Y</button></th>
+              <th data-sort="ytd"><button type="button">YTD</button></th>
+              <th data-sort="sixMonths"><button type="button">6M</button></th>
+              <th data-sort="threeMonths"><button type="button">3M</button></th>
+              <th data-sort="oneMonth"><button type="button">1M</button></th>
+              <th data-sort="oneWeek"><button type="button">1W</button></th>
+              <th data-sort="oneDay"><button type="button">1D</button></th>
+              <th data-sort="marketCap"><button type="button">Market cap</button></th>
+              <th data-sort="pe"><button type="button">P/E</button></th>
+              <th data-sort="pb"><button type="button">P/B</button></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="12" class="empty-state">Add your free API key to load the Indian stock universe.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span id="page-info">—</span>
+        <div class="pagination">
+          <button id="prev-page" type="button" disabled>Previous</button>
+          <span id="page-number">1 / 1</span>
+          <button id="next-page" type="button" disabled>Next</button>
+        </div>
+      </footer>
+    </section>
+
+    <section class="data-note">
+      <span id="price-asof">Price data: —</span>
+      <span id="valuation-asof">Valuation data: —</span>
+      <span>Daily, delayed EOD data — not live quotes</span>
+    </section>
+    <div id="progress-area" class="progress-area hidden">
+      <div class="progress-head"><span id="progress-message">Updating screener…</span><span id="progress-count"></span></div>
+      <div class="progress-track"><div id="progress-fill"></div></div>
+    </div>
+    <div class="footnote">* All-time return uses the earliest available adjusted close: NSE history begins 04 Jan 2010; BSE history begins 08 Jul 2024. Some newer or renamed listings may have a shorter history. Price returns include split, bonus and dividend adjustments.</div>
+  </main>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

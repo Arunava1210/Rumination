@@ -1,0 +1,53 @@
+{
+  "name": "india-stock-screener",
+  "version": "0.1.0",
+  "description": "A minimal India-wide stock screener",
+  "main": "electron/main.cjs",
+  "author": "Arunava1210",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "start": "electron .",
+    "dev:app": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --x64 --publish never",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "hyparquet": "1.32.0",
+    "hyparquet-compressors": "1.1.2"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.1",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "vite": "7.1.11",
+    "wait-on": "8.0.4"
+  },
+  "build": {
+    "appId": "in.bharat.screener",
+    "productName": "India Stock Screener",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Finance",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  },
+  "type": "module"
+}
