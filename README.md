@@ -19,14 +19,14 @@ Click a column heading to sort ascending or descending. The search field matches
 
 ## Data
 
-- **Returns and adjusted closing prices:** TejHQ's daily NSE/BSE metrics Parquet files, built from exchange bhavcopies and adjusted for corporate actions. These are end-of-day values, not live quotes. NSE coverage begins 4 January 2010; BSE coverage begins 8 July 2024.
-- **Market capitalization:** NSE's bulk Stocks Traded feed. The value is the exchange's reported market capitalisation, shown in ₹ crore.
-- **P/E:** NSE's daily PE Ratio report.
+- **Returns and adjusted closing prices:** TejHQ's daily NSE/BSE metrics Parquet files, built from exchange bhavcopies and adjusted for corporate actions. These are end-of-day values, not live quotes.
+- **Market capitalization:** The official NSE daily PR archive's MCAP CSV member, matched to NSE symbols. The current archive path and four-digit-year MCAP member names are used.
+- **P/E:** NSE's daily PE Ratio report (PE_ddmmyy.csv), using the Symbol P/E column.
 - **Company names:** TejHQ's exchange snapshots. Symbols remain visible when a company-name lookup is unavailable.
 
 The all-time column means change from the earliest adjusted-price observation available in this data source for that instrument. It is not guaranteed to equal the IPO-to-date return when a listing predates the dataset or the instrument's ISIN changed. BSE-only listings may not have NSE market-cap/P-E data, and those cells are left blank rather than estimated.
 
-Data is cached locally after retrieval. Exchange and data-provider terms apply; the app is intended for personal research and does not redistribute market-data files.
+Valuation files are cached locally. If an NSE report is temporarily unavailable, the app uses the most recently saved valuation snapshot and labels that status. Returns are end-of-day, not live quotes. Exchange and data-provider terms apply; the app is intended for personal research and does not redistribute market-data files.
 
 ## Run from source
 
@@ -40,4 +40,4 @@ Build a Linux x86_64 AppImage:
 
     npm run dist:linux
 
-The AppImage is written to `release/`.
+The AppImage is written to release/.

@@ -1,6 +1,6 @@
 {
   "name": "indian-stock-screener",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A minimal sortable screener for Indian equities",
   "type": "module",
   "main": "electron/main.cjs",
@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "hyparquet": "1.31.1",
-    "hyparquet-compressors": "1.1.2"
+    "hyparquet-compressors": "1.1.2",
+    "fflate": "0.8.2"
   },
   "devDependencies": {
     "concurrently": "9.2.1",

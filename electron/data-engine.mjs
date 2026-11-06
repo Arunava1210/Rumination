@@ -2,11 +2,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { asyncBufferFromUrl, parquetReadObjects, parquetRead } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
+import { unzipSync, strFromU8 } from "fflate";
+import { parseMarketCapCsv, parsePeCsv, nseDateParts } from "./nse-reports.mjs";
 
 const HF_ROOT = "https://huggingface.co/datasets/tejhq/indian-markets/resolve/main/";
 const TEJ_API = "https://api.tejhq.dev/v1/";
-const NSE_HOME = "https://www.nseindia.com/";
-const NSE_STOCKS_TRADED = "https://www.nseindia.com/api/live-analysis-stocksTraded";
+const NSE_PR_ROOTS = [
+  "https://nsearchives.nseindia.com/content/historical/EQUITIES/",
+  "https://nsearchives.nseindia.com/archives/equities/bhavcopy/pr/"
+];
 const NSE_PE_ROOT = "https://nsearchives.nseindia.com/archives/equities/mkt/";
 const REQUEST_HEADERS = {
   "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
@@ -85,6 +89,12 @@ async function fetchText(url, headers = REQUEST_HEADERS) {
   return response.text();
 }
 
+async function fetchBytes(url, headers = REQUEST_HEADERS) {
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(40000) });
+  if (!response.ok) throw new Error(response.status + " " + response.statusText + " from " + new URL(url).hostname);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 async function readParquet(url, columns) {
   const file = await asyncBufferFromUrl({ url, requestInit: { headers: REQUEST_HEADERS } });
   return parquetReadObjects({ file, columns, compressors });
@@ -113,105 +123,49 @@ function snapshotMap(rows, exchange) {
   return map;
 }
 
-function parseCsv(input) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let quoted = false;
-  const source = String(input).replace(/^\uFEFF/, "");
-  for (let i = 0; i < source.length; i += 1) {
-    const ch = source[i];
-    if (ch === '"' && quoted && source[i + 1] === '"') {
-      value += '"';
-      i += 1;
-    } else if (ch === '"') {
-      quoted = !quoted;
-    } else if (ch === "," && !quoted) {
-      row.push(value);
-      value = "";
-    } else if ((ch === "\n" || ch === "\r") && !quoted) {
-      if (ch === "\r" && source[i + 1] === "\n") i += 1;
-      row.push(value);
-      if (row.some(cell => String(cell).trim() !== "")) rows.push(row);
-      row = [];
-      value = "";
-    } else {
-      value += ch;
-    }
-  }
-  row.push(value);
-  if (row.some(cell => String(cell).trim() !== "")) rows.push(row);
-  return rows;
-}
-
-function headerIndex(header, candidates) {
-  const normalized = header.map(normalizeKey);
-  for (const candidate of candidates) {
-    const found = normalized.indexOf(normalizeKey(candidate));
-    if (found >= 0) return found;
-  }
-  return -1;
-}
-
-function parsePeCsv(csv) {
-  const rows = parseCsv(csv);
-  const result = new Map();
-  for (let i = 0; i < Math.min(rows.length, 10); i += 1) {
-    const header = rows[i];
-    const symbolIndex = headerIndex(header, ["SYMBOL", "SYMBOLCODE"]);
-    const peIndex = headerIndex(header, ["SYMBOLPE", "PE", "PRICEEARNING", "PRICEEARNINGRATIO"]);
-    if (symbolIndex < 0 || peIndex < 0) continue;
-    for (const row of rows.slice(i + 1)) {
-      const symbol = text(row[symbolIndex]).toUpperCase();
-      const pe = asNumber(row[peIndex]);
-      if (symbol && pe !== null) result.set(symbol, pe > 0 ? pe : null);
-    }
-    break;
-  }
-  return result;
-}
-
 function seriesRank(series) {
   return ({ EQ: 5, A: 5, BE: 4, B: 4, BZ: 3, T: 3 })[series] || 0;
 }
 
-async function fetchNseBulkData() {
-  const home = await fetch(NSE_HOME, {
-    headers: REQUEST_HEADERS,
-    signal: AbortSignal.timeout(20000)
-  });
-  if (!home.ok) throw new Error("NSE session could not be opened (" + home.status + ").");
+async function fetchNseMarketCapReport(tradingDate) {
+  if (!tradingDate) return { reportDate: null, marketCaps: new Map(), error: "No NSE trading date." };
 
-  let cookie = "";
-  if (typeof home.headers.getSetCookie === "function") {
-    cookie = home.headers.getSetCookie().map(part => part.split(";")[0]).filter(Boolean).join("; ");
-  } else {
-    cookie = (home.headers.get("set-cookie") || "").split(/,(?=[^;,]+=)/).map(part => part.split(";")[0]).filter(Boolean).join("; ");
-  }
-  const headers = { ...REQUEST_HEADERS, Accept: "application/json, text/plain, */*" };
-  if (cookie) headers.Cookie = cookie;
+  for (let offset = 0; offset <= 8; offset += 1) {
+    const reportDate = new Date(tradingDate + "T00:00:00Z");
+    reportDate.setUTCDate(reportDate.getUTCDate() - offset);
+    const date = reportDate.toISOString().slice(0, 10);
+    let tokens;
+    try {
+      tokens = nseDateParts(date);
+    } catch {
+      continue;
+    }
 
-  const payload = await fetchJson(NSE_STOCKS_TRADED, headers);
-  const rows = payload?.total?.data || payload?.data || payload?.stocks || [];
-  if (!Array.isArray(rows) || rows.length === 0) {
-    throw new Error("NSE Stocks Traded returned no rows.");
-  }
+    const urls = [
+      NSE_PR_ROOTS[0] + tokens.year + "/" + tokens.month + "/PR" + tokens.ddmmyy + ".zip",
+      NSE_PR_ROOTS[1] + "PR" + tokens.ddmmyy + ".zip"
+    ];
 
-  const marketCaps = new Map();
-  let marketCapCount = 0;
-  for (const item of rows) {
-    const symbol = text(objectField(item, ["symbol", "SYMBOL"])).toUpperCase();
-    const marketCapCrore = asNumber(objectField(item, [
-      "marketCap", "marketCapital", "marketCapitalization", "market_cap",
-      "marketCapitalisation", "marketCapitalValue"
-    ]));
-    if (symbol && marketCapCrore !== null && marketCapCrore > 0) {
-      marketCaps.set(symbol, marketCapCrore * 1e7);
-      marketCapCount += 1;
+    for (const url of urls) {
+      try {
+        const zipBytes = await fetchBytes(url);
+        const archive = unzipSync(zipBytes);
+        const entries = Object.entries(archive);
+        const expectedName = new RegExp("mcap" + tokens.ddmmyyyy + "\\.csv$", "i");
+        const member = entries.find(([name]) => expectedName.test(name))
+          || entries.find(([name]) => /(^|\\/)mcap\\d{8}\\.csv$/i.test(name));
+        if (!member) throw new Error("The PR archive did not contain its dated MCAP CSV.");
+
+        const marketCaps = parseMarketCapCsv(strFromU8(member[1]));
+        if (!marketCaps.size) throw new Error("The MCAP CSV did not contain recognised market-cap rows.");
+        return { reportDate: date, marketCaps, count: marketCaps.size };
+      } catch (error) {
+        // Try the alternate official archive path, then the previous trading day.
+      }
     }
   }
 
-  return { marketCaps, count: rows.length, marketCapCount };
+  return { reportDate: null, marketCaps: new Map(), count: 0, error: "NSE PR/MCAP reports were not available for the recent sessions." };
 }
 
 async function fetchPeReport(tradingDate) {
@@ -365,11 +319,11 @@ export class ScreenerDataEngine {
     const dataDate = [nseDate, bseDate].filter(Boolean).sort().pop() || null;
     if (!dataDate) throw new Error("The market-data source did not provide a trading date.");
 
-    const [nseMeta, bseMeta, bulkResult, peReport] = await Promise.all([
+    const [nseMeta, bseMeta, marketCapReport, peReport] = await Promise.all([
       this.readSnapshot("NSE", nseDate || dataDate),
       this.readSnapshot("BSE", bseDate || dataDate),
-      fetchNseBulkData().catch(error => ({
-        marketCaps: new Map(), marketCapCount: 0, error: error.message
+      fetchNseMarketCapReport(nseDate || dataDate).catch(error => ({
+        reportDate: null, marketCaps: new Map(), count: 0, error: error.message
       })),
       fetchPeReport(nseDate || dataDate).catch(error => ({
         reportDate: null, priceEarnings: new Map(), error: error.message
@@ -379,36 +333,42 @@ export class ScreenerDataEngine {
     const valuationCache = await this.readCache("valuation-cache.json");
     const cachedCaps = new Map(Object.entries(valuationCache?.marketCaps || {}).map(([symbol, value]) => [symbol, asNumber(value)]));
     const cachedPe = new Map(Object.entries(valuationCache?.priceEarnings || {}).map(([symbol, value]) => [symbol, asNumber(value)]));
-    const marketCaps = bulkResult.marketCaps.size ? bulkResult.marketCaps : cachedCaps;
+    const marketCaps = marketCapReport.marketCaps.size ? marketCapReport.marketCaps : cachedCaps;
     const priceEarnings = peReport.priceEarnings.size ? peReport.priceEarnings : cachedPe;
-    const valuations = { marketCaps, priceEarnings };
+
     const rows = buildRows(
       [
         ...nseMetrics.map(row => ({ ...row, exchange: "NSE" })),
         ...bseMetrics.map(row => ({ ...row, exchange: "BSE" }))
       ],
       new Map([...nseMeta, ...bseMeta]),
-      valuations
+      { marketCaps, priceEarnings }
     );
 
     const result = {
       rows,
       dataDate,
-      reportDate: peReport.reportDate || valuationCache?.reportDate || null,
+      reportDate: peReport.reportDate || marketCapReport.reportDate || valuationCache?.reportDate || null,
       allTimeReady: false,
-      marketCapCoverage: bulkResult.marketCapCount || marketCaps.size,
+      marketCapCoverage: marketCaps.size,
       peCoverage: priceEarnings.size,
       note: null
     };
-    if (!bulkResult.marketCapCount && !marketCaps.size) result.note = "NSE market-cap feed unavailable; those cells are blank.";
-    else if (!bulkResult.marketCapCount) result.note = "Using the last saved NSE market-cap snapshot.";
-    if (!peReport.priceEarnings.size && priceEarnings.size) result.note = "Using the last saved NSE P/E snapshot.";
-    else if (!peReport.priceEarnings.size && !priceEarnings.size) result.note = "NSE P/E report unavailable; those cells are blank.";
+
+    const missing = [];
+    if (!marketCaps.size) missing.push("NSE market-cap report unavailable");
+    else if (!marketCapReport.marketCaps.size) missing.push("using saved market-cap snapshot");
+    if (!priceEarnings.size) missing.push("NSE P/E report unavailable");
+    else if (!peReport.priceEarnings.size) missing.push("using saved P/E snapshot");
+    if (missing.length) result.note = missing.join("; ") + ".";
+    
     if (marketCaps.size || priceEarnings.size) {
       await this.writeCache("valuation-cache.json", {
         marketCaps: Object.fromEntries(marketCaps),
         priceEarnings: Object.fromEntries(priceEarnings),
         reportDate: result.reportDate,
+        marketCapDate: marketCapReport.reportDate || valuationCache?.marketCapDate || null,
+        peDate: peReport.reportDate || valuationCache?.peDate || null,
         updatedAt: new Date().toISOString()
       });
     }

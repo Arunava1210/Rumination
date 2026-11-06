@@ -10,7 +10,9 @@ const state = {
   loading: false,
   allTimeReady: false,
   dataDate: null,
-  reportDate: null
+  reportDate: null,
+  marketCapCoverage: 0,
+  peCoverage: 0
 };
 
 function status(text, kind = "ready") {
@@ -128,9 +130,11 @@ function setData(data) {
   state.rows = data.rows;
   state.dataDate = data.dataDate || null;
   state.reportDate = data.reportDate || null;
+  state.marketCapCoverage = Number(data.marketCapCoverage || 0);
+  state.peCoverage = Number(data.peCoverage || 0);
   state.allTimeReady = Boolean(data.allTimeReady);
   const dateText = state.dataDate ? "EOD · " + formatDate(state.dataDate) : "EOD data";
-  status(dateText, "ready");
+  status(dateText + " · MC " + state.marketCapCoverage.toLocaleString("en-IN") + " · P/E " + state.peCoverage.toLocaleString("en-IN"), "ready");
   render();
 }
 
@@ -150,8 +154,11 @@ function showAllTimeReady(data) {
   state.allTimeReady = true;
   state.dataDate = data.dataDate || state.dataDate;
   state.reportDate = data.reportDate || state.reportDate;
+  state.marketCapCoverage = Number(data.marketCapCoverage || state.marketCapCoverage);
+  state.peCoverage = Number(data.peCoverage || state.peCoverage);
   $("history-progress").classList.add("hidden");
-  status(state.dataDate ? "EOD · " + formatDate(state.dataDate) : "EOD data", "ready");
+  const dateText = state.dataDate ? "EOD · " + formatDate(state.dataDate) : "EOD data";
+  status(dateText + " · MC " + state.marketCapCoverage.toLocaleString("en-IN") + " · P/E " + state.peCoverage.toLocaleString("en-IN"), "ready");
   render();
 }
 
