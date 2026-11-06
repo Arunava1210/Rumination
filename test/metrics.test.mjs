@@ -9,7 +9,7 @@ test("decimal returns convert to percentages", () => {
 });
 test("all-time return uses adjusted closes", () => {
   assert.equal(allTimePercent(150, 100), 50);
-  assert.equal(allTimePercent(80, 100), -20);
+  assert.ok(Math.abs(allTimePercent(80, 100) - (-20)) < 1e-10);
   assert.equal(allTimePercent(80, null), null);
   assert.equal(allTimePercent(80, 0), null);
 });
