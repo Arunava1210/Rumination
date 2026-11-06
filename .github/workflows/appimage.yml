@@ -1,0 +1,50 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches: [indian-screener]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+      - name: Build AppImage
+        run: npm run dist:linux
+      - name: Install virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Smoke-test AppImage launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPIMAGE="$(find release -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$APPIMAGE"
+          chmod +x "$APPIMAGE"
+          set +e
+          timeout 15s xvfb-run -a env APPIMAGE_EXTRACT_AND_RUN=1 BHARAT_SCREENER_SMOKE=1 "$APPIMAGE" --no-sandbox
+          result=$?
+          set -e
+          if [[ "$result" -ne 0 && "$result" -ne 124 ]]; then
+            exit "$result"
+          fi
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: India-Stock-Screener-AppImage
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 14

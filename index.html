@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f4f6f9" />
+  <title>India Stock Screener</title>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <h1>India Stock Screener</h1>
+          <p>Indian equities · NSE + BSE</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="freshness">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="data-status">Loading market data…</span>
+        </div>
+        <button id="refresh" class="refresh-button" type="button" title="Refresh latest data">↻ <span>Refresh</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="control-bar">
+        <label class="search-box" for="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="search" type="search" placeholder="Search company or ticker…" autocomplete="off" spellcheck="false" />
+        </label>
+        <div class="result-count" id="result-count">Preparing screener…</div>
+      </section>
+
+      <section class="table-shell" aria-label="Indian stocks">
+        <div class="table-scroll" id="table-scroll">
+          <table id="screener-table">
+            <thead>
+              <tr>
+                <th class="stock-column"><button data-sort="symbol" type="button">Stock <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="allTime" type="button" title="Since the earliest available adjusted-price observation">All time* <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="oneYear" type="button">1 year <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="ytd" type="button">YTD <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="sixMonth" type="button">6 months <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="threeMonth" type="button">3 months <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="oneMonth" type="button">1 month <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="oneWeek" type="button">1 week <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="oneDay" type="button">1 day <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="marketCap" type="button">Market cap <span class="sort-indicator"></span></button></th>
+                <th><button data-sort="pe" type="button">P/E <span class="sort-indicator"></span></button></th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr><td class="empty-state" colspan="11">Loading the latest NSE and BSE market data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="history-progress hidden" id="history-progress">
+        <div class="progress-copy"><span id="history-message">Preparing all-time returns…</span><span id="history-percent"></span></div>
+        <div class="progress-track"><div id="history-progress-bar"></div></div>
+      </div>
+
+      <footer class="footnotes">
+        <p>* All-time return uses the earliest adjusted-price record available for that instrument in the source history. NSE history starts 4 Jan 2010; BSE history starts 8 Jul 2024.</p>
+        <p>Market cap and P/E come from NSE daily reports. BSE-only listings may not have these valuation fields. Figures are end-of-day, not live quotes.</p>
+      </footer>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
