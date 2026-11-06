@@ -11,7 +11,21 @@ A focused Linux desktop chart terminal for Indian equities. The chart surface is
 - Mouse-wheel zoom, drag-to-pan, crosshair, price/time scales, fit-to-data and user-placed horizontal price lines.
 - Symbol search by ticker or company name.
 
-This is deliberately chart-first. It does not include order placement, broker connections, indicators, screeners, news or portfolio features.
+This is deliberately chart-first. It does not include order placement, broker connections, screeners, news or portfolio features. A persistent light/dark theme switch and three optional technical indicators are included.
+
+## Appearance
+
+Use the **Light** / **Dark** button in the top bar to switch themes. The selected theme is remembered on this device.
+
+## Technical indicators
+
+The indicator panes are optional and can be enabled from the **Indicators** menu.
+
+- **ADR** uses the average daily high-low range (SMA of daily highs minus SMA of daily lows). It always uses daily OHLC bars, even when the main chart is intraday. The default lookback is 14 sessions. It does not include overnight gaps, unlike ATR.
+- **RSI** uses Wilder's smoothed average gains and losses on the selected chart interval. The default length is 14; the pane includes 30 and 70 reference levels.
+- **ASI** is Wilder's cumulative Swing Index. Its limit-move parameter **T** is user-adjustable and expressed in the instrument's quoted price units (₹ for Indian equities). The default T is ₹12; adjust it for the price scale and volatility of the selected instrument. ASI includes a zero reference line.
+
+The indicators are calculated locally from the OHLC bars fetched for the selected symbol. The ASI parameter is instrument-specific; there is no universal value of T for all Indian shares.
 
 ## Data coverage and important limitations
 
@@ -34,6 +48,7 @@ Requires Node.js 22+ and npm.
 
 ```bash
 npm install
+npm test
 npm run dev:app
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "bharatchart",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A focused Indian equities chart terminal using TradingView Lightweight Charts",
   "main": "electron/main.cjs",
   "author": "Arunava1210",
@@ -10,7 +10,8 @@
     "dev:app": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "vite build",
     "start": "electron .",
-    "dist:linux": "npm run build && electron-builder --linux AppImage --x64 --publish never"
+    "dist:linux": "npm run build && electron-builder --linux AppImage --x64 --publish never",
+    "test": "node --test"
   },
   "dependencies": {
     "lightweight-charts": "5.2.1"
@@ -46,5 +47,6 @@
       "category": "Office",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
-  }
+  },
+  "type": "module"
 }

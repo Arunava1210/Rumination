@@ -16,6 +16,7 @@
     </div>
     <div class="top-actions">
       <div class="exchange-switch"><button class="exchange-btn active" data-exchange="NSE">NSE</button><button class="exchange-btn" data-exchange="BSE">BSE</button></div>
+      <button id="theme-toggle" class="theme-toggle" type="button" title="Switch to light theme">☼ Light</button>
       <button id="refresh" class="icon-button" title="Refresh symbols and chart">↻</button>
     </div>
   </header>
@@ -29,7 +30,25 @@
       <div class="toolbar">
         <div class="toolbar-left"><div class="tool-group intervals"><button data-interval="1m">1m</button><button data-interval="5m">5m</button><button data-interval="15m">15m</button><button data-interval="30m">30m</button><button data-interval="1h">1H</button><span class="tool-divider"></span><button data-interval="1D" class="active">1D</button><button data-interval="1W">1W</button><button data-interval="1M">1M</button></div>
           <div class="tool-group ranges"><button data-range="1D">1D</button><button data-range="5D">5D</button><button data-range="1M">1M</button><button data-range="3M">3M</button><button data-range="6M">6M</button><button data-range="1Y" class="active">1Y</button><button data-range="5Y">5Y</button><button data-range="MAX">MAX</button></div></div>
-        <div class="toolbar-right"><select id="chart-type" aria-label="Chart type"><option value="candles">Candles</option><option value="bar">Bars</option><option value="line">Line</option><option value="area">Area</option></select><button id="draw-line" class="tool-button">＋ Price line</button><button id="clear-lines" class="tool-button">Clear</button><button id="fit-chart" class="tool-button icon-only" title="Fit chart">⤢</button></div>
+        <div class="toolbar-right">
+          <select id="chart-type" aria-label="Chart type"><option value="candles">Candles</option><option value="bar">Bars</option><option value="line">Line</option><option value="area">Area</option></select>
+          <div class="indicator-menu-wrap">
+            <button id="indicators-toggle" class="tool-button" type="button" aria-expanded="false">Indicators ▾</button>
+            <div id="indicator-menu" class="indicator-menu hidden">
+              <div class="indicator-menu-heading">Technical indicators</div>
+              <label class="indicator-option"><input id="indicator-adr" type="checkbox"><span><b>Average Daily Range (ADR)</b><small>Average high–low range, calculated on daily candles</small></span></label>
+              <label class="indicator-option"><input id="indicator-rsi" type="checkbox"><span><b>Relative Strength Index (RSI)</b><small>Wilder RSI with 30 / 70 reference levels</small></span></label>
+              <label class="indicator-option"><input id="indicator-asi" type="checkbox"><span><b>Accumulation Swing Index (ASI)</b><small>Wilder's cumulative Swing Index</small></span></label>
+              <div class="indicator-settings">
+                <label>ADR period<input id="adr-period" type="number" min="2" max="250" step="1" value="14"></label>
+                <label>RSI period<input id="rsi-period" type="number" min="2" max="250" step="1" value="14"></label>
+                <label>ASI limit move (T)<input id="asi-limit" type="number" min="0.01" step="0.01" value="12"></label>
+              </div>
+              <p class="indicator-footnote">ADR always uses daily data, even on intraday charts. RSI and ASI use the selected chart interval. T is expressed in the instrument's quoted price units (₹ for Indian equities).</p>
+            </div>
+          </div>
+          <button id="draw-line" class="tool-button">＋ Price line</button><button id="clear-lines" class="tool-button">Clear</button><button id="fit-chart" class="tool-button icon-only" title="Fit chart">⤢</button>
+        </div>
       </div>
       <div class="chart-title-row"><div><b id="chart-symbol">NSE:RELIANCE</b><span id="chart-interval-label">· 1 day</span></div><div id="ohlc-line">O — &nbsp; H — &nbsp; L — &nbsp; C —</div><div id="data-provider" class="provider-label">Connecting to market data…</div></div>
       <div class="chart-wrap"><div id="chart"></div><div id="chart-state" class="chart-state hidden"></div></div>
