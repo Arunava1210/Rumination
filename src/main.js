@@ -1,6 +1,26 @@
 import "./style.css";
 
 const $ = id => document.getElementById(id);
+function formatPercent(value) {
+  const n = Number(value);
+  if (value === null || value === undefined || !Number.isFinite(n)) return "—";
+  return (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+}
+function formatMarketCap(value) {
+  const n = Number(value);
+  if (value === null || value === undefined || !Number.isFinite(n)) return "—";
+  const fmt = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+  return n >= 100000 ? "₹" + fmt.format(n / 100000) + " L Cr" : "₹" + fmt.format(n) + " Cr";
+}
+function compareRows(a, b, key, direction = "desc") {
+  const av = a[key] === null || a[key] === undefined ? null : Number(a[key]);
+  const bv = b[key] === null || b[key] === undefined ? null : Number(b[key]);
+  if (av === null && bv === null) return 0;
+  if (av === null) return 1;
+  if (bv === null) return -1;
+  const result = av === bv ? 0 : av < bv ? -1 : 1;
+  return direction === "asc" ? result : -result;
+}
 const state = {
   rows: [],
   filtered: [],
